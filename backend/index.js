@@ -1,5 +1,16 @@
 import cookieParser from "cookie-parser";
 import express from "express"
+import {connectDB} from "./db/db.js";
+import dotenv from "dotenv"
+dotenv.config();
+
+(async()=>{
+    try {
+        await connectDB();
+    } catch (error) {
+        console.log("MongoDb connection Failed:",error)
+    }
+})();
 
 const app = express();
 
