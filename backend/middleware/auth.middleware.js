@@ -23,3 +23,15 @@ export const loginMiddleware = async (req,res,next) => {
         res.status(500).send({message:error.message,success:false})
     }
 }
+
+export const isLoggedIn = async (req,res,next) => {
+    try {
+        const token = req.cookies.token;
+        if(!token) return res.status(402).send({message:"Unauthorized! Please login first.",success:false})
+        const decoded = jwt.verify(token,process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(500).send({message:"Server Error",success:false})
+    }
+}

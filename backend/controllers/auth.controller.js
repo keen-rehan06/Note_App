@@ -3,6 +3,9 @@ import { verifyEmail } from "../config/verifyEmail.js";
 import jwt from "jsonwebtoken";
 import userModel from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import sessionModel from "../models/session.model.js";
+import { AccessToken,RefreshToken } from "../config/AccessRefreshToken.js";
+import { isLoggedIn } from "../middleware/auth.middleware.js";
 
 export const register = async (req, res) => {
   try {
@@ -69,8 +72,45 @@ export const verification = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        
+        const {email,password}  = req.body;
+        const user = await userModel.findOne({email});
+        const newUser = await userModel.findById(user._id).select("-password");
+        const result = await bcrypt.compare(password,user.password);
+        if(user.isVerified === false) return res.status(401).send({message:"Email not verified!"})
+        if(!result) return res.status(401).send({message:"Password is incorrect!!",success:false});
+        const token = await generateToken(user)
+        res.cookie("token",token);
+        const existingSession = await sessionModel.findOne({userId:user._id})
+        if(existingSession){
+            await sessionModel.deleteOne({userId:user._id})
+        }
+        await sessionModel.create({userId:user._id})
+        const accessToken = AccessToken(user)
+        const refreshToken = RefreshToken(user);
+        user.token = null;
+        user.isLoggedin = true;
+        await user.save();
+        return res.status(200).send({message:"User LoggedIn Successfully!!",success:true,data:newUser,accessToken,refreshToken});
     } catch (error) {
-        
+        console.log(error.message)
+        return res.status(500).send({message:"Server error",error})
     }
 };
+
+export const logout = async(req,res) => {
+       try {
+        const userId = req.user.id;
+        await sessionModel.deleteMany({ userId });   
+        await userModel.findByIdAndUpdate(userId,{isLoggedIn:false});
+        res.clearCookie("token");
+        res.status(200).send({ 
+          message: "User Logout Successfully!!",
+          success:true 
+        });
+      } catch (error) {
+         res.status(500).send({ 
+          message: "Server Error:",
+          error
+        });
+       }
+}
