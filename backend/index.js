@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import express from "express"
 import {connectDB} from "./db/db.js";
 import dotenv from "dotenv"
+import authRoute from "./routes/auth.route.js"
 dotenv.config();
 
 (async()=>{
@@ -14,9 +15,11 @@ dotenv.config();
 
 const app = express();
 
+
 app.use(express.json({}))
 app.use(express.urlencoded({extended:true}))
 app.use(cookieParser())
+app.use("/",authRoute)
 
 app.get("/",function(req,res){
     console.log("Running")
