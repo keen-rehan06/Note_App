@@ -1,7 +1,8 @@
 import nodemailer from "nodemailer"
 
 export const verifyEmail = (token,email) => {
-    const transport = nodemailer.createTransport({
+   try {
+     const transport = nodemailer.createTransport({
         service:"gmail",
         auth:{
             user:process.env.MAIL_USER,
@@ -22,4 +23,7 @@ export const verifyEmail = (token,email) => {
          res.send("Email has been sent successfully");
          console.log('mail sent');
     })
+   } catch (error) {
+    throw new error(error)
+   }
 }
