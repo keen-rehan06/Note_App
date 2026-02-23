@@ -5,7 +5,7 @@ import userModel from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import sessionModel from "../models/session.model.js";
 import { AccessToken,RefreshToken } from "../config/AccessRefreshToken.js";
-import { isLoggedIn } from "../middleware/auth.middleware.js";
+
 
 export const register = async (req, res) => {
   try {
@@ -74,7 +74,6 @@ export const login = async (req, res) => {
     try {
         const {email,password}  = req.body;
         const user = await userModel.findOne({email});
-        const newUser = await userModel.findById(user._id).select("-password");
         const result = await bcrypt.compare(password,user.password);
         if(user.isVerified === false) return res.status(401).send({message:"Email not verified!"})
         if(!result) return res.status(401).send({message:"Password is incorrect!!",success:false});
@@ -90,6 +89,7 @@ export const login = async (req, res) => {
         user.token = null;
         user.isLoggedin = true;
         await user.save();
+        const newUser = await userModel.findById(user._id).select("-password");
         return res.status(200).send({message:"User LoggedIn Successfully!!",success:true,data:newUser,accessToken,refreshToken});
     } catch (error) {
         console.log(error.message)
@@ -108,9 +108,27 @@ export const logout = async(req,res) => {
           success:true 
         });
       } catch (error) {
+        console.log(error.message)
          res.status(500).send({ 
           message: "Server Error:",
           error
         });
        }
 }
+
+export const forgotPassword = async (req,res) => {
+ try {
+   const {email} = req.body;
+  const user = await userModel.findOne({email});
+  if(!user) return res.status(404).send({message:"User not found"})
+  const otp = Math.floor(100000 + Math.random()*900000).toString();
+  const otpExpiry = new Date(Date.now()+10*60*1000);
+  user.otp = otp;
+  user.otpExpiry = otpExpiry;
+  await user.save()
+  res.status(200).send({message:`The otp(One Time Password) ${otp}`,success:true})
+ } catch (error) {
+  res.status(500).send({message:"Server Error",success:false})
+ }
+}
+

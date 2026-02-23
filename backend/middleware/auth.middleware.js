@@ -1,4 +1,5 @@
 import userModel from "../models/user.model.js";
+import jwt from "jsonwebtoken";
 
 export const registerMiddleware = async (req,res,next) => {
 try {
@@ -27,11 +28,13 @@ export const loginMiddleware = async (req,res,next) => {
 export const isLoggedIn = async (req,res,next) => {
     try {
         const token = req.cookies.token;
-        if(!token) return res.status(402).send({message:"Unauthorized! Please login first.",success:false})
+        if(!token) return res.status(401).send({message:"Unauthorized! Please login first.",success:false})
         const decoded = jwt.verify(token,process.env.JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {
+        console.log(error.message)
         return res.status(500).send({message:"Server Error",success:false})
     }
 }
+
