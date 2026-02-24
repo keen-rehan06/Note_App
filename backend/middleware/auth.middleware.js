@@ -132,7 +132,7 @@ export const changePasswordMiddleware = async (req,res,next) => {
         const user = await userModel.findOne({email});
         if(!user) return res.status(404).send({message:"User not found",success:false});
         if(!newPassword || !confirmpassword) return res.status(401).send({message:"All fields are required!!",success:false});
-        if(!newPassword !== confirmpassword) return res.status(401).send({message:"password does not match",success:false});
+        if(newPassword !== confirmpassword) return res.status(401).send({message:"password does not match",success:false});
         next();
     } catch (error) {
         console.log(error.message);

@@ -15,10 +15,11 @@ import {
   verifyOtpMiddleware,
   changePasswordMiddleware,
 } from "../middleware/auth.middleware.js";
+import { userSchema, validateUser } from "../validator/userValidator.js";
 
 const app = express.Router();
 
-app.post("/register", registerMiddleware, register);
+app.post("/register", registerMiddleware,validateUser(userSchema), register);
 app.post("/verified", verification);
 app.post("/login", loginMiddleware, login);
 app.get("/logout", isLoggedIn, logout);
