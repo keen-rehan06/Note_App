@@ -26,15 +26,38 @@ export const loginMiddleware = async (req,res,next) => {
 }
 
 export const isLoggedIn = async (req,res,next) => {
+    // try {
+    //     const token = req.cookies.token;
+    //     if(!token) return res.status(401).send({message:"Unauthorized! Please login first.",success:false})
+    //     const decoded = jwt.verify(token,process.env.JWT_SECRET);
+    //     req.user = decoded;
+    //     next();
+    // } catch (error) {
+    //     console.log(error.message)
+    //     return res.status(500).send({message:"Server Error",success:false})
+    // }
     try {
-        const token = req.cookies.token;
-        if(!token) return res.status(401).send({message:"Unauthorized! Please login first.",success:false})
-        const decoded = jwt.verify(token,process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
+        const authHeader = req.headers.authorization;
+        if(!authHeader || !authHeader.startsWith("Bearer ")){
+            return res.status(401).send({message:"Access Token is missing or invalid!",success:false});
+        }
+        const token = authHeader.split(" ")[1];
+        jwt.verify(token,process.env.JWT_SECRET,async (err,decoded) => {
+            if(err) { 
+                if(err.name === "TokenExpiredError"){
+                    return res.status(400).send({message:"Access Token has expired, use refreshtoken to generate again",success:false})
+                }
+                return res.status(400).send({message:"Access token is missing or invalid!",success:false});
+            }
+            const {id} = decoded;
+            const user = await userModel.findById(id);
+            if(!user) return res.status(404).send({message:"User not found!!",success:false});
+            req.user = user
+            req.userId = user._id
+            next();
+        })
     } catch (error) {
-        console.log(error.message)
-        return res.status(500).send({message:"Server Error",success:false})
+        return res.status(401).send({message:error.message,success:false})
     }
 }
 
