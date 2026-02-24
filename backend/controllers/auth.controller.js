@@ -5,6 +5,7 @@ import userModel from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import sessionModel from "../models/session.model.js";
 import { AccessToken, RefreshToken } from "../config/AccessRefreshToken.js";
+import { sendOtpMail } from "../config/otpSendMail.js";
 
 export const register = async (req, res) => {
   try {
@@ -61,12 +62,10 @@ export const verification = async (req, res) => {
     user.token = null;
     user.isVerified = true;
     await user.save();
-    return res
-      .status(200)
-      .send({
-        message: `User ${user.name} is Verified Successfully!!`,
-        success: true,
-      });
+    return res.status(200).send({
+      message: `User ${user.name} is Verified Successfully!!`,
+      success: true,
+    });
   } catch (error) {
     console.log(error.message);
     return res.status(500).send({ message: "Server Error", success: false });
@@ -98,15 +97,13 @@ export const login = async (req, res) => {
     user.isLoggedin = true;
     await user.save();
     const newUser = await userModel.findById(user._id).select("-password");
-    return res
-      .status(200)
-      .send({
-        message: "User LoggedIn Successfully!!",
-        success: true,
-        data: newUser,
-        accessToken,
-        refreshToken,
-      });
+    return res.status(200).send({
+      message: "User LoggedIn Successfully!!",
+      success: true,
+      data: newUser,
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
     console.log(error.message);
     return res.status(500).send({ message: "Server error", error });
@@ -142,11 +139,25 @@ export const forgotPassword = async (req, res) => {
     user.otp = otp;
     user.otpExpiry = otpExpiry;
     await user.save();
-    await sendOtpMail(email,otp)
+    await sendOtpMail(email, otp);
     res
       .status(200)
-      .send({ message: `The otp(One Time Password) ${otp}`, success: true });
+      .send({ message: `The otp has been sent successfully!`, success: true });
   } catch (error) {
     res.status(500).send({ message: "Server Error", success: false });
+  }
+};
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const email = req.params.email;
+    const user = await userModel.findOne({ email });
+    user.otp = null;
+    user.otpExpiry = null;
+    await user.save();
+    return res.status(200).send({message:"otp verified successfully!!",success:true})
+  } catch (error) {
+    return res.status(500).send({message:"Internal Server Error",success:false})
   }
 };
