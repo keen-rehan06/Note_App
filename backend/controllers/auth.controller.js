@@ -142,7 +142,7 @@ export const forgotPassword = async (req, res) => {
     await sendOtpMail(email, otp);
     res
       .status(200)
-      .send({ message: `The otp has been sent successfully!`, success: true });
+      .send({ message: `The otp ${otp} has been sent successfully!`, success: true });
   } catch (error) {
     res.status(500).send({ message: "Server Error", success: false });
   }
@@ -161,3 +161,17 @@ export const verifyOtp = async (req, res) => {
     return res.status(500).send({message:"Internal Server Error",success:false})
   }
 };
+
+export const changePassword = async(req,res) => {
+  try {
+     const email = req.params.email;
+     const {newPassword,confirmpassword} = req.body;
+     const user = await userModel.findOne({email});
+     const hash = await bcrypt.hash(newPassword,10);
+     user.password = hash;
+     await user.save();
+     return res.status(200).send({message:"Password change successfully!!",success:true});
+  } catch (error) {
+    return res.status(500).send({message:"Server Error",error});
+  }
+}
